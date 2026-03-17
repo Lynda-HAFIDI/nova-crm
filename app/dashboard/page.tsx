@@ -1,0 +1,38 @@
+import { createClient } from "../../lib/supabase/server";
+import { redirect } from "next/navigation";
+
+export default async function DashboardPage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-950 text-white p-8">
+      <h1 className="text-3xl font-bold">Dashboard Nova CRM</h1>
+      <p className="mt-2 text-slate-400">Bienvenue {user.email}</p>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold">Contacts</h2>
+          <p className="mt-2 text-slate-400">À connecter bientôt</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold">Leads</h2>
+          <p className="mt-2 text-slate-400">À connecter bientôt</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-lg font-semibold">Tâches</h2>
+          <p className="mt-2 text-slate-400">À connecter bientôt</p>
+        </div>
+      </div>
+    </main>
+  );
+}
