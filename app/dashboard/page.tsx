@@ -5,6 +5,13 @@ import LogoutButton from "../../components/logout-button";
 import FunnelChart from "../../components/funnel-chart";
 import SourceChart from "../../components/source-chart";
 
+type LeaderboardItem = {
+  userId: string;
+  name: string;
+  convertedCount: number;
+  signedRevenue: number;
+};
+
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -32,11 +39,15 @@ export default async function DashboardPage() {
 
   const { data: leadsData } = await supabase
     .from("leads")
-    .select("status, source, estimated_value");
+    .select("status, source, estimated_value, assigned_to");
 
   const { data: tasksData } = await supabase
     .from("tasks")
     .select("status, due_date");
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, role");
 
   const convertedCount =
     leadsData?.filter((lead) => lead.status === "converted").length || 0;
@@ -76,6 +87,11 @@ export default async function DashboardPage() {
       .filter((lead) => lead.status !== "lost")
       .reduce((sum, lead) => sum + Number(lead.estimated_value || 0), 0);
 
+  const signedRevenue =
+    (leadsData || [])
+      .filter((lead) => lead.status === "converted")
+      .reduce((sum, lead) => sum + Number(lead.estimated_value || 0), 0);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -98,6 +114,37 @@ export default async function DashboardPage() {
 
       return diffDays >= 0 && diffDays <= 2;
     }).length || 0;
+
+  const leaderboardMap = new Map<string, LeaderboardItem>();
+
+  (leadsData || []).forEach((lead) => {
+    if (!lead.assigned_to) return;
+
+    const profile = profiles?.find((p) => p.id === lead.assigned_to);
+    const existing = leaderboardMap.get(lead.assigned_to);
+
+    if (!existing) {
+      leaderboardMap.set(lead.assigned_to, {
+        userId: lead.assigned_to,
+        name: profile?.full_name || profile?.email || "Utilisateur",
+        convertedCount: lead.status === "converted" ? 1 : 0,
+        signedRevenue:
+          lead.status === "converted" ? Number(lead.estimated_value || 0) : 0,
+      });
+    } else {
+      if (lead.status === "converted") {
+        existing.convertedCount += 1;
+        existing.signedRevenue += Number(lead.estimated_value || 0);
+      }
+    }
+  });
+
+  const leaderboardData = Array.from(leaderboardMap.values()).sort((a, b) => {
+    if (b.signedRevenue !== a.signedRevenue) {
+      return b.signedRevenue - a.signedRevenue;
+    }
+    return b.convertedCount - a.convertedCount;
+  });
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
@@ -164,7 +211,12 @@ export default async function DashboardPage() {
             <p className="mt-2 text-3xl font-bold">{lateTasksCount}</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 md:col-span-2">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+            <h2 className="text-sm text-slate-400">CA signé</h2>
+            <p className="mt-2 text-3xl font-bold">{signedRevenue} MAD</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-sm text-slate-400">Montant total du pipeline</h2>
             <p className="mt-2 text-3xl font-bold">{pipelineAmount} MAD</p>
           </div>
@@ -180,6 +232,37 @@ export default async function DashboardPage() {
             <h2 className="mb-4 text-xl font-semibold">Leads par source</h2>
             <SourceChart data={sourceData} />
           </div>
+        </div>
+
+        <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <h2 className="mb-4 text-xl font-semibold">Leaderboard commerciaux</h2>
+
+          {!leaderboardData.length ? (
+            <p className="text-slate-400">Aucune donnée commerciale disponible</p>
+          ) : (
+            <div className="space-y-4">
+              {leaderboardData.map((item, index) => (
+                <div
+                  key={item.userId}
+                  className="flex items-center justify-between rounded-xl border border-slate-700 p-4"
+                >
+                  <div>
+                    <p className="font-semibold">
+                      #{index + 1} — {item.name}
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Leads convertis : {item.convertedCount}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-sm text-slate-400">CA signé</p>
+                    <p className="text-xl font-bold">{item.signedRevenue} MAD</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
