@@ -33,3 +33,29 @@ export async function addTask(formData: FormData) {
 
   redirect("/tasks");
 }
+
+export async function updateTaskStatus(formData: FormData) {
+  const supabase = await createClient();
+
+  const taskId = formData.get("task_id")?.toString();
+  const status = formData.get("status")?.toString();
+
+  if (!taskId || !status) {
+    redirect("/tasks");
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  await supabase
+    .from("tasks")
+    .update({ status })
+    .eq("id", taskId);
+
+  redirect("/tasks");
+}
