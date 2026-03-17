@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Sidebar from "../../components/sidebar";
 import LogoutButton from "../../components/logout-button";
 import { addTask, updateTaskStatus } from "./actions";
+import TasksCalendar from "../../components/tasks-calendar";
 
 const columns = [
   { key: "todo", label: "À faire" },
@@ -38,6 +39,28 @@ export default async function TasksPage() {
     .select("id, title")
     .order("created_at", { ascending: false });
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const urgentTasks =
+    tasks?.filter((task) => {
+      if (!task.due_date || task.status === "done") return false;
+      const due = new Date(task.due_date);
+      due.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil(
+        (due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return diffDays >= 0 && diffDays <= 2;
+    }) || [];
+
+  const lateTasks =
+    tasks?.filter((task) => {
+      if (!task.due_date || task.status === "done") return false;
+      const due = new Date(task.due_date);
+      due.setHours(0, 0, 0, 0);
+      return due < today || task.status === "late";
+    }) || [];
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-white">
       <Sidebar />
@@ -47,7 +70,7 @@ export default async function TasksPage() {
           <div>
             <h1 className="text-3xl font-bold">Tâches</h1>
             <p className="mt-2 text-slate-400">
-              Gestion des tâches commerciales
+              Gestion, calendrier et échéances
             </p>
           </div>
           <LogoutButton />
@@ -117,6 +140,57 @@ export default async function TasksPage() {
               Ajouter la tâche
             </button>
           </form>
+        </div>
+
+        <div className="mb-8 grid gap-6 xl:grid-cols-2">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+            <h2 className="mb-4 text-xl font-semibold">Calendrier des tâches</h2>
+            <TasksCalendar tasks={tasks || []} />
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <h2 className="mb-4 text-xl font-semibold">Tâches urgentes</h2>
+              {!urgentTasks.length ? (
+                <p className="text-slate-400">Aucune tâche urgente</p>
+              ) : (
+                <div className="space-y-3">
+                  {urgentTasks.map((task) => (
+                    <div key={task.id} className="rounded-xl border border-slate-700 p-4">
+                      <p className="font-semibold">{task.title}</p>
+                      <p className="text-sm text-slate-400">
+                        Date limite : {task.due_date || "Non définie"}
+                      </p>
+                      <p className="text-sm text-slate-400">
+                        Priorité : {getPriorityLabel(task.priority)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <h2 className="mb-4 text-xl font-semibold">Tâches en retard</h2>
+              {!lateTasks.length ? (
+                <p className="text-slate-400">Aucune tâche en retard</p>
+              ) : (
+                <div className="space-y-3">
+                  {lateTasks.map((task) => (
+                    <div key={task.id} className="rounded-xl border border-slate-700 p-4">
+                      <p className="font-semibold">{task.title}</p>
+                      <p className="text-sm text-slate-400">
+                        Date limite : {task.due_date || "Non définie"}
+                      </p>
+                      <p className="text-sm text-slate-400">
+                        Lead : {task.leads?.title || "Aucun"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 xl:grid-cols-4">
