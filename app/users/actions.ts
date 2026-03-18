@@ -17,7 +17,6 @@ export async function updateUserRole(formData: FormData) {
 
   if (!user) redirect("/login");
 
-  // vérifier que c'est un admin
   const { data: me } = await supabase
     .from("profiles")
     .select("role")

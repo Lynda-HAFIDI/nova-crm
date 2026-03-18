@@ -13,7 +13,6 @@ export default async function UsersPage() {
 
   if (!user) redirect("/login");
 
-  // vérifier si admin
   const { data: me } = await supabase
     .from("profiles")
     .select("role")
