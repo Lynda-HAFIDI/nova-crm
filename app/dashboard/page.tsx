@@ -213,12 +213,12 @@ export default async function DashboardPage() {
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-sm text-slate-400">CA signé</h2>
-            <p className="mt-2 text-3xl font-bold">{signedRevenue} MAD</p>
+            <p className="mt-2 text-3xl font-bold">{signedRevenue} €</p>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-sm text-slate-400">Montant total du pipeline</h2>
-            <p className="mt-2 text-3xl font-bold">{pipelineAmount} MAD</p>
+            <p className="mt-2 text-3xl font-bold">{pipelineAmount} €</p>
           </div>
         </div>
 
@@ -257,7 +257,7 @@ export default async function DashboardPage() {
 
                   <div className="text-right">
                     <p className="text-sm text-slate-400">CA signé</p>
-                    <p className="text-xl font-bold">{item.signedRevenue} MAD</p>
+                    <p className="text-xl font-bold">{item.signedRevenue} €</p>
                   </div>
                 </div>
               ))}
